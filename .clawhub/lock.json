@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "web-scraper": {
+      "version": "1.0.1",
+      "installedAt": 1770991942967
+    },
+    "capability-evolver": {
+      "version": "1.10.15",
+      "installedAt": 1770994225760
+    },
+    "playwright-crawler": {
+      "version": "1.0.0",
+      "installedAt": 1770994227881
+    },
+    "senior-fullstack": {
+      "version": "1.0.0",
+      "installedAt": 1770994236130
+    },
+    "neural-memory": {
+      "version": "1.0.0",
+      "installedAt": 1770994238153
+    },
+    "agentic-browser-0-1-2": {
+      "version": "1.0.0",
+      "installedAt": 1770994240642
+    },
+    "find-skills": {
+      "version": "0.1.0",
+      "installedAt": 1771480495516
+    },
+    "tavily-search": {
+      "version": "1.0.0",
+      "installedAt": 1771480548208
+    },
+    "proactive-agent": {
+      "version": "3.1.0",
+      "installedAt": 1771480573002
+    }
+  }
+}
