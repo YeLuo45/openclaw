@@ -15,6 +15,22 @@ node .\openclaw.mjs message send -h
 
 说明：若 PowerShell/控制台代码页不是 UTF-8，帮助里自带的表情等装饰字符可能显示为乱码，不影响命令名与选项阅读。
 
+## 大模型：添加与验证（文档导航）
+
+以下流程的**命令清单与小米 MiMo 说明**集中在附录中 **`openclaw models` 命令说明之后**的 **「大模型：新增凭证、切换默认模型与验证（含小米 MiMo）」** 一节（全文搜索该标题即可跳转）。部署与排错经验见同目录 **`user_readme.md`** §1.4。
+
+| 目的 | 常用命令 |
+|------|----------|
+| 引导写入模型与鉴权 | `openclaw onboard`（如 `--auth-choice xiaomi-api-key`） |
+| 切换默认模型 | `openclaw models set <provider/model-id>` |
+| 查看状态 / JSON | `openclaw models status`、`openclaw models status --json` |
+| 实连 API 探活 | `openclaw models status --probe [--probe-provider <名>]` |
+| 脚本/CI 鉴权检查 | `openclaw models status --check` |
+| 发一条消息自测（嵌入式） | `openclaw agent --local --agent <id> --message "..." --json` |
+| 改配置后 reload 网关 | `openclaw gateway restart` |
+
+若本机未将 `openclaw` 加入 PATH，可在仓库根目录使用：`node .\openclaw.mjs <子命令> …`。
+
 ## 顶层命令一览
 
 以附录 A 中 `Commands:` 列表为准（与 `node openclaw.mjs --help` 一致）。
@@ -2861,6 +2877,117 @@ Commands:
   auth             管理模型授权配置文件
 
 文档: https://docs.openclaw.ai/cli/models
+
+
+========================================================================
+大模型：新增凭证、切换默认模型与验证（含小米 MiMo）
+========================================================================
+
+以下命令均在已安装并配置好 `openclaw` CLI 的前提下使用（Windows 可用 PowerShell）。小米 MiMo **常规** OpenAI 兼容网关为 `https://api.xiaomimimo.com/v1`；**Token Plan 套餐**密钥需使用套餐对应网关（例如中国区 `https://token-plan-cn.xiaomimimo.com/v1`、新加坡 `https://token-plan-sgp.xiaomimimo.com/v1`）。用错网关会出现 **401 Invalid API Key**。官方说明见 [Xiaomi MiMo API 开放平台](https://platform.xiaomimimo.com/#/docs/welcome)。**请勿**在文档或仓库中提交真实 API Key；使用环境变量或本地配置文件，并已泄露的密钥应在控制台轮换。
+
+**1. 首次接入小米 MiMo（推荐：引导式 onboard）**
+
+```powershell
+# 交互式选择小米并写入 auth 与模型配置
+openclaw onboard --auth-choice xiaomi-api-key
+
+# 非交互：直接传入密钥（密钥勿写入脚本入库）
+openclaw onboard --auth-choice xiaomi-api-key --xiaomi-api-key "$env:XIAOMI_API_KEY"
+```
+
+配置完成后，默认模型引用一般为 `xiaomi/mimo-v2-flash`；OpenClaw 会为 `xiaomi` 提供者写入与 **OpenAI Chat Completions** 兼容的默认 `baseUrl`（`https://api.xiaomimimo.com/v1`）及 `api: openai-completions`。若为 Token Plan，请在 `models.providers.xiaomi` 中改写 `baseUrl` 为套餐网关。若需旧版 Anthropic 兼容端点，可覆盖为 `baseUrl: https://api.xiaomimimo.com/anthropic` 与 `api: anthropic-messages`（见仓库内 `docs/providers/xiaomi.md`）。
+
+**2. 环境变量（与 onboard 等价效果之一）**
+
+```powershell
+$env:XIAOMI_API_KEY = "<你的密钥>"
+# 再在配置中设置 agents.defaults.model.primary 为 xiaomi/mimo-v2-flash，或执行下方 models set
+```
+
+**3. 查看与切换默认大模型**
+
+```powershell
+openclaw models list
+openclaw models list --provider xiaomi
+openclaw models set xiaomi/mimo-v2-flash
+openclaw models set-image <支持视觉的模型引用>
+```
+
+**4. 验证配置与鉴权（推荐）**
+
+```powershell
+# 当前默认模型、提供者与健康状态（文本）
+openclaw models status
+openclaw models status --plain
+
+# JSON，便于脚本解析
+openclaw models status --json
+
+# 鉴权是否缺失/过期（用于 CI：非零退出）
+openclaw models status --check
+
+# 对当前配置做实时探测（需网络；不要与 --plain 同时使用）
+openclaw models status --probe
+openclaw models status --probe --probe-provider xiaomi
+```
+
+说明：`--probe` 与 `--plain` 不能同时使用，否则会报错。
+
+**5. 模型别名与回退**
+
+```powershell
+openclaw models aliases list
+openclaw models aliases add mimo xiaomi/mimo-v2-flash
+openclaw models fallbacks list
+openclaw models fallbacks add <备用模型引用>
+```
+
+**6. 授权档案（OAuth/令牌类提供者常用；小米为 API Key，多用 onboard 或 env）**
+
+```powershell
+openclaw models auth
+openclaw models auth add
+openclaw models auth login --provider <插件注册的提供者 id>
+openclaw models auth paste-token --provider anthropic
+openclaw models auth order get
+```
+
+**7. 按代理维度检查（多 agent 目录时）**
+
+```powershell
+openclaw models status --agent <agentId>
+openclaw models list --agent <agentId>
+```
+
+**8. 改 `openclaw.json` 或模型相关配置后**
+
+```powershell
+openclaw gateway restart
+# 若未全局安装 CLI：
+cd G:\WS\ai-tools\opensource\openclaw   # 按你的仓库路径修改
+node .\openclaw.mjs gateway restart
+```
+
+**9. 端到端发一条消息（验证默认模型能否完成一轮推理）**
+
+不经过 Gateway RPC，适合本机快速确认 Key 与 `baseUrl` 是否正确（需当前 shell 或用户环境中已有对应 `*_API_KEY` 等变量）。
+
+```powershell
+openclaw agent --local --agent main --message "只回答一个字：OK" --json
+# 若未全局安装 CLI：
+node .\openclaw.mjs agent --local --agent main --message "只回答一个字：OK" --json
+```
+
+返回 JSON 中 `meta.agentMeta.provider` / `model` 应对应你期望的提供者；`payloads[0].text` 为模型回复。
+
+文档: https://docs.openclaw.ai/cli/models · 小米提供者详解: 仓库内 `docs/providers/xiaomi.md`
+
+
+========================================================================
+示例
+pnpm openclaw models auth login --provider qwen-portal
+========================================================================
+
 
 
 ========================================================================

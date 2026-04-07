@@ -13,11 +13,17 @@ OpenAI and Anthropic formats and uses API keys for authentication. Create your A
 the [Xiaomi MiMo console](https://platform.xiaomimimo.com/#/console/api-keys). OpenClaw uses
 the `xiaomi` provider with a Xiaomi MiMo API key.
 
+Official docs: [Xiaomi MiMo API Open Platform](https://platform.xiaomimimo.com/#/docs/welcome).
+
 ## Model overview
 
-- **mimo-v2-flash**: 262144-token context window, Anthropic Messages API compatible.
-- Base URL: `https://api.xiaomimimo.com/anthropic`
+- **mimo-v2-flash**: 262144-token context window, OpenAI Chat Completions compatible (default in OpenClaw).
+- **Default base URL** (控制台常规 API 密钥，可与 OpenAI SDK 同源配置): `https://api.xiaomimimo.com/v1`
+- **Token Plan**（月度套餐等，密钥与网关与常规 key 不同）: 在 `models.providers.xiaomi` 中把 `baseUrl` 设为套餐对应网关，例如中国区 `https://token-plan-cn.xiaomimimo.com/v1` 或新加坡 `https://token-plan-sgp.xiaomimimo.com/v1`。若使用常规 `sk-` 类密钥却指向 `token-plan-*`，接口会返回 **401 Invalid API Key**。
 - Authorization: `Bearer $XIAOMI_API_KEY`
+
+If you need the legacy Anthropic Messages endpoint instead, override `models.providers.xiaomi` with
+`baseUrl: "https://api.xiaomimimo.com/anthropic"` and `api: "anthropic-messages"`.
 
 ## CLI setup
 
@@ -37,8 +43,8 @@ openclaw onboard --auth-choice xiaomi-api-key --xiaomi-api-key "$XIAOMI_API_KEY"
     mode: "merge",
     providers: {
       xiaomi: {
-        baseUrl: "https://api.xiaomimimo.com/anthropic",
-        api: "anthropic-messages",
+        baseUrl: "https://api.xiaomimimo.com/v1",
+        api: "openai-completions",
         apiKey: "XIAOMI_API_KEY",
         models: [
           {

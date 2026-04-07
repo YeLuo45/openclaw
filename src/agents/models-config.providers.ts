@@ -32,7 +32,13 @@ const MINIMAX_API_COST = {
   cacheWrite: 10,
 };
 
-const XIAOMI_BASE_URL = "https://api.xiaomimimo.com/anthropic";
+/**
+ * OpenAI-compatible MiMo Chat Completions (default API key from MiMo 控制台).
+ * Token Plan（套餐密钥，常为 tp- 前缀）需改用中国区/海外套餐网关，例如
+ * https://token-plan-cn.xiaomimimo.com/v1 或 https://token-plan-sgp.xiaomimimo.com/v1。
+ * Legacy Anthropic: https://api.xiaomimimo.com/anthropic
+ */
+const XIAOMI_BASE_URL = "https://api.xiaomimimo.com/v1";
 export const XIAOMI_DEFAULT_MODEL_ID = "mimo-v2-flash";
 const XIAOMI_DEFAULT_CONTEXT_WINDOW = 262144;
 const XIAOMI_DEFAULT_MAX_TOKENS = 8192;
@@ -361,7 +367,7 @@ function buildSyntheticProvider(): ProviderConfig {
 export function buildXiaomiProvider(): ProviderConfig {
   return {
     baseUrl: XIAOMI_BASE_URL,
-    api: "anthropic-messages",
+    api: "openai-completions",
     models: [
       {
         id: XIAOMI_DEFAULT_MODEL_ID,
