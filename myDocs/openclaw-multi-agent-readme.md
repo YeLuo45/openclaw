@@ -48,17 +48,17 @@ OpenClaw（原名 Clawdbot，昵称"龙虾"）是 2026 年最热门的开源 AI 
 
 ### 2.4 大模型：添加与验证（CLI 速查）
 
-为某个 Agent 或全局更换/新增大模型时，建议用 CLI 完成**配置 + 探活 + 一轮对话自测**。完整命令与小米 MiMo（`baseUrl` 与 Token Plan 区别）见本仓库：
+为某个 Agent 或全局更换/新增大模型时，建议用 CLI 完成**配置 + 探活 + 一轮对话自测**。完整命令与 **小米 MiMo**（`baseUrl` 与 Token Plan）、**MiniMax 中国区**（`minimaxi.com` / `MINIMAX_API_KEY` / Anthropic 兼容 `baseUrl`）见本仓库：
 
-- **`myDocs/openclaw_command-zh.md`**：文首「大模型：添加与验证（文档导航）」+ 附录「大模型：新增凭证、切换默认模型与验证（含小米 MiMo）」  
+- **`myDocs/openclaw_command-zh.md`**：文首「大模型：添加与验证（文档导航）」+ 附录「大模型：新增凭证、切换默认模型与验证（含小米 MiMo、MiniMax）」（**§10**）  
 - **`myDocs/user_readme.md`**：§1.4  
 
 常用命令摘要（PowerShell，路径按本机调整）：
 
 ```powershell
 openclaw models set <provider>/<model-id>
-openclaw models status --probe [--probe-provider <名>]
-openclaw agent --local --agent main --message "只回答：OK" --json
+openclaw models status --probe [--probe-provider <名>] [--probe-timeout <ms>]
+openclaw agent --local --agent main [--model <provider>/<model-id>] --message "只回答：OK" --json
 openclaw gateway restart
 ```
 

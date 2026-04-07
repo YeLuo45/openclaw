@@ -80,9 +80,11 @@
 
    ```powershell
    openclaw agent --local --agent main --message "只回答一个字：OK" --json
+   # 只测某一模型（避免主模型 401 后静默走到 fallbacks）：
+   openclaw agent --local --agent main --model minimax/MiniMax-M2.7 --message "只回答一个字：OK" --json
    ```
 
-   从输出 JSON 查看 `meta.agentMeta.provider`、`model` 与 `payloads[0].text`。  
+   从输出 JSON 查看 `meta.agentMeta.provider`、`model` 与 `payloads[0].text`。若配置了 **fallbacks**，主模型失败时最终 `provider` 可能是备用模型而非主模型；验证指定厂商时请**务必加 `--model`**。  
 
 5. **修改配置后让已安装的网关任务重新加载**  
 
@@ -94,7 +96,9 @@
 
 **小米 MiMo**：常规控制台 API Key 使用默认 `baseUrl` `https://api.xiaomimimo.com/v1`；Token Plan 套餐密钥需改为 `token-plan-cn` / `token-plan-sgp` 等套餐网关，混用会出现 **401**。详见仓库内 `docs/providers/xiaomi.md`。
 
-**更全的命令表与示例**：`myDocs/openclaw_command-zh.md` 顶部 **「大模型：添加与验证（文档导航）」** 与文中 **「大模型：新增凭证、切换默认模型与验证（含小米 MiMo）」** 一节。
+**MiniMax（中国区）**：密钥放在用户环境变量 **`MINIMAX_API_KEY`**（勿提交到 Git）。在 `models.providers.minimax` 中常需显式设置 `baseUrl` 为 `https://api.minimaxi.com/anthropic`、`api` 为 `anthropic-messages`，模型 id 如 **`MiniMax-M2.7`**（与官方一致、区分大小写）。仅依赖 `onboard`/`configure` 默认项时，可能仍指向 **`api.minimax.io`**，与 minimaxi.com 控制台密钥不匹配会导致 **401**。官方接入说明：[通过 AI 编程工具接入](https://platform.minimaxi.com/docs/guides/text-ai-coding-tools)；仓库内摘要：`docs/providers/minimax.md`。探活可加 `--probe-timeout`；本机首次 `node .\openclaw.mjs` 冷启动可能需数十秒。
+
+**更全的命令表与示例**：`myDocs/openclaw_command-zh.md` 顶部 **「大模型：添加与验证（文档导航）」** 与文中 **「大模型：新增凭证、切换默认模型与验证（含小米 MiMo、MiniMax）」** 一节（含 **§10 MiniMax**）。
 
 ---
 

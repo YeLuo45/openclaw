@@ -17,16 +17,16 @@ node .\openclaw.mjs message send -h
 
 ## 大模型：添加与验证（文档导航）
 
-以下流程的**命令清单与小米 MiMo 说明**集中在附录中 **`openclaw models` 命令说明之后**的 **「大模型：新增凭证、切换默认模型与验证（含小米 MiMo）」** 一节（全文搜索该标题即可跳转）。部署与排错经验见同目录 **`user_readme.md`** §1.4。
+以下流程的**命令清单**与 **小米 MiMo、MiniMax（中国区 API Key）** 等说明集中在附录中 **`openclaw models` 命令说明之后**的 **「大模型：新增凭证、切换默认模型与验证（含小米 MiMo、MiniMax）」** 一节（全文搜索该标题即可跳转）。部署与排错经验见同目录 **`user_readme.md`** §1.4。
 
 | 目的 | 常用命令 |
 |------|----------|
-| 引导写入模型与鉴权 | `openclaw onboard`（如 `--auth-choice xiaomi-api-key`） |
+| 引导写入模型与鉴权 | `openclaw onboard`（如 `--auth-choice xiaomi-api-key`）；MiniMax 亦可用 `openclaw configure` / OAuth，见附录 §10 |
 | 切换默认模型 | `openclaw models set <provider/model-id>` |
 | 查看状态 / JSON | `openclaw models status`、`openclaw models status --json` |
-| 实连 API 探活 | `openclaw models status --probe [--probe-provider <名>]` |
+| 实连 API 探活 | `openclaw models status --probe [--probe-provider <名>]`（可加 `--probe-timeout <ms>`） |
 | 脚本/CI 鉴权检查 | `openclaw models status --check` |
-| 发一条消息自测（嵌入式） | `openclaw agent --local --agent <id> --message "..." --json` |
+| 发一条消息自测（嵌入式） | `openclaw agent --local --agent <id> [--model <provider/model-id>] --message "..." --json` |
 | 改配置后 reload 网关 | `openclaw gateway restart` |
 
 若本机未将 `openclaw` 加入 PATH，可在仓库根目录使用：`node .\openclaw.mjs <子命令> …`。
@@ -2880,10 +2880,14 @@ Commands:
 
 
 ========================================================================
-大模型：新增凭证、切换默认模型与验证（含小米 MiMo）
+大模型：新增凭证、切换默认模型与验证（含小米 MiMo、MiniMax）
 ========================================================================
 
-以下命令均在已安装并配置好 `openclaw` CLI 的前提下使用（Windows 可用 PowerShell）。小米 MiMo **常规** OpenAI 兼容网关为 `https://api.xiaomimimo.com/v1`；**Token Plan 套餐**密钥需使用套餐对应网关（例如中国区 `https://token-plan-cn.xiaomimimo.com/v1`、新加坡 `https://token-plan-sgp.xiaomimimo.com/v1`）。用错网关会出现 **401 Invalid API Key**。官方说明见 [Xiaomi MiMo API 开放平台](https://platform.xiaomimimo.com/#/docs/welcome)。**请勿**在文档或仓库中提交真实 API Key；使用环境变量或本地配置文件，并已泄露的密钥应在控制台轮换。
+以下命令均在已安装并配置好 `openclaw` CLI 的前提下使用（Windows 可用 PowerShell）。**请勿**在文档或仓库中提交真实 API Key；使用环境变量或本地配置文件，并已泄露的密钥应在厂商控制台轮换。
+
+**小米 MiMo**：**常规** OpenAI 兼容网关为 `https://api.xiaomimimo.com/v1`；**Token Plan 套餐**密钥需使用套餐对应网关（例如中国区 `https://token-plan-cn.xiaomimimo.com/v1`、新加坡 `https://token-plan-sgp.xiaomimimo.com/v1`）。用错网关会出现 **401 Invalid API Key**。官方说明见 [Xiaomi MiMo API 开放平台](https://platform.xiaomimimo.com/#/docs/welcome)。
+
+**MiniMax**：中国区 OpenAI 兼容基址为 `https://api.minimaxi.com/v1`，Anthropic 兼容基址为 `https://api.minimaxi.com/anthropic`（与 [MiniMax：通过 AI 编程工具接入](https://platform.minimaxi.com/docs/guides/text-ai-coding-tools) 一致）。OpenClaw 内置 `onboard`/`configure` 写入 MiniMax API Key 时，默认可能指向 **`api.minimax.io`**（国际）；**大陆用户若使用 minimaxi.com 控制台密钥**，往往需在 `openclaw.json` 的 `models.providers.minimax` 中显式覆盖 `baseUrl`。详见下文 **§10** 与仓库内 `docs/providers/minimax.md`。
 
 **1. 首次接入小米 MiMo（推荐：引导式 onboard）**
 
@@ -2980,7 +2984,42 @@ node .\openclaw.mjs agent --local --agent main --message "只回答一个字：O
 
 返回 JSON 中 `meta.agentMeta.provider` / `model` 应对应你期望的提供者；`payloads[0].text` 为模型回复。
 
-文档: https://docs.openclaw.ai/cli/models · 小米提供者详解: 仓库内 `docs/providers/xiaomi.md`
+**若配置了 `agents.defaults.model.fallbacks`**：主模型鉴权失败（如 **401**）时会自动降级到备用模型。此时日志里可能出现主模型报错，但最终 `meta.agentMeta` 仍是 **fallback 的 provider**。要**单独验证某一模型**，请加 **`--model <provider>/<model-id>`**，避免误判。
+
+**10. MiniMax（中国区 API Key + Anthropic 兼容，示例：MiniMax-M2.7）**
+
+1. **环境变量（推荐，勿把 sk- 写进仓库）**  
+
+   ```powershell
+   [System.Environment]::SetEnvironmentVariable("MINIMAX_API_KEY", "<你的密钥>", "User")
+   ```
+
+   新开终端后生效；或用当前会话：`$env:MINIMAX_API_KEY = "<你的密钥>"`。
+
+2. **在 `openclaw.json` 中合并 `models.providers.minimax`**（`models.mode` 一般为 `merge`）。大陆 Anthropic 兼容示例：  
+
+   - `baseUrl`: `https://api.minimaxi.com/anthropic`  
+   - `api`: `anthropic-messages`  
+   - `apiKey`: 字面量 `MINIMAX_API_KEY`（与小米写法一致，从环境变量解析）或已规范化的 env 引用  
+   - `models` 中增加 `id` 为 `MiniMax-M2.7`（**大小写与官方一致**）等条目  
+
+3. **默认模型与别名**：`agents.defaults.model.primary` 设为 `minimax/MiniMax-M2.7`；可在 `agents.defaults.models` 中为该引用设 `alias`。
+
+4. **OAuth / 官方向导**：亦可按 [MiniMax 文档 - OpenClaw 小节](https://platform.minimaxi.com/docs/guides/text-ai-coding-tools) 使用 **`openclaw configure`** 选 MiniMax、或启用 **`minimax-portal-auth`** 插件走 OAuth（`minimax-portal/...` 模型引用）。
+
+5. **验证**  
+
+   ```powershell
+   openclaw models status --probe --probe-provider minimax --probe-timeout 60000
+   openclaw agent --local --agent main --model minimax/MiniMax-M2.7 --message "用一句话回答：1+1等于几？" --json
+   ```
+
+6. **排错**  
+   - **401**、提示需在 **`Authorization`** 中携带密钥：检查用户级 **`MINIMAX_API_KEY`** 是否已设置、密钥是否已轮换且未过期。  
+   - **仍走备用模型**：见上文 **§9** 关于 **`--model`** 与 **fallback** 的说明。  
+   - **首次执行 `node .\openclaw.mjs …` 较慢**（冷启动可达数十秒）属常见现象，探活时可加大 **`--probe-timeout`**。
+
+文档: https://docs.openclaw.ai/cli/models · 小米: `docs/providers/xiaomi.md` · MiniMax: `docs/providers/minimax.md`
 
 
 ========================================================================
