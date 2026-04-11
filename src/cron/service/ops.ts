@@ -82,7 +82,7 @@ export async function update(state: CronServiceState, id: string, patch: CronJob
     await ensureLoaded(state);
     const job = findJobOrThrow(state, id);
     const now = state.deps.nowMs();
-    applyJobPatch(job, patch);
+    applyJobPatch(job, patch, now);
     job.updatedAtMs = now;
     if (job.enabled) {
       job.state.nextRunAtMs = computeJobNextRunAtMs(job, now);

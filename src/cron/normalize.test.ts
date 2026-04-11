@@ -110,4 +110,22 @@ describe("normalizeCronJobCreate", () => {
     expect(schedule.kind).toBe("at");
     expect(schedule.atMs).toBe(Date.parse("2026-01-12T18:00:00Z"));
   });
+
+  it("infers relative after schedules from afterMs", () => {
+    const normalized = normalizeCronJobCreate({
+      name: "after schedule",
+      enabled: true,
+      schedule: { afterMs: 300_000 },
+      sessionTarget: "main",
+      wakeMode: "now",
+      payload: {
+        kind: "systemEvent",
+        text: "hi",
+      },
+    }) as unknown as Record<string, unknown>;
+
+    const schedule = normalized.schedule as Record<string, unknown>;
+    expect(schedule.kind).toBe("after");
+    expect(schedule.afterMs).toBe(300_000);
+  });
 });

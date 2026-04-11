@@ -27,6 +27,17 @@ export const CronScheduleSchema = Type.Union([
   ),
 ]);
 
+export const CronScheduleInputSchema = Type.Union([
+  CronScheduleSchema,
+  Type.Object(
+    {
+      kind: Type.Literal("after"),
+      afterMs: Type.Integer({ minimum: 1 }),
+    },
+    { additionalProperties: false },
+  ),
+]);
+
 export const CronPayloadSchema = Type.Union([
   Type.Object(
     {
@@ -134,7 +145,7 @@ export const CronAddParamsSchema = Type.Object(
     description: Type.Optional(Type.String()),
     enabled: Type.Optional(Type.Boolean()),
     deleteAfterRun: Type.Optional(Type.Boolean()),
-    schedule: CronScheduleSchema,
+    schedule: CronScheduleInputSchema,
     sessionTarget: Type.Union([Type.Literal("main"), Type.Literal("isolated")]),
     wakeMode: Type.Union([Type.Literal("next-heartbeat"), Type.Literal("now")]),
     payload: CronPayloadSchema,
@@ -150,7 +161,7 @@ export const CronJobPatchSchema = Type.Object(
     description: Type.Optional(Type.String()),
     enabled: Type.Optional(Type.Boolean()),
     deleteAfterRun: Type.Optional(Type.Boolean()),
-    schedule: Type.Optional(CronScheduleSchema),
+    schedule: Type.Optional(CronScheduleInputSchema),
     sessionTarget: Type.Optional(Type.Union([Type.Literal("main"), Type.Literal("isolated")])),
     wakeMode: Type.Optional(Type.Union([Type.Literal("next-heartbeat"), Type.Literal("now")])),
     payload: Type.Optional(CronPayloadPatchSchema),

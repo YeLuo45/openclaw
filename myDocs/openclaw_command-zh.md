@@ -15,6 +15,17 @@ node .\openclaw.mjs message send -h
 
 说明：若 PowerShell/控制台代码页不是 UTF-8，帮助里自带的表情等装饰字符可能显示为乱码，不影响命令名与选项阅读。
 
+### Windows 原生 PowerShell 补充说明
+
+- 若 `pnpm` 已安装但执行时报 `pnpm.ps1` 被系统执行策略拦截，优先改用 `pnpm.cmd`：
+  `pnpm.cmd -v`、`pnpm.cmd openclaw gateway -h`
+- 也可执行：
+  `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+- 在**源码仓库**里跑 OpenClaw 时，PowerShell 下优先用 `pnpm.cmd openclaw ...` 或 `node .\openclaw.mjs ...`
+- Windows 上不建议对源码开发启动使用 `openclaw gateway --force`，因为依赖 `lsof`，常见报错为 `lsof not found`
+- `openclaw gateway restart/start/stop` 只针对**已安装的 Gateway 服务**；若提示 `Gateway service missing`，请直接前台启动 Gateway，或先执行 `openclaw gateway install`
+- 若 `http://127.0.0.1:18789/` 返回 `503`，常见原因不是 Gateway 没起，而是 Control UI 资源未构建；可先执行 `pnpm.cmd ui:build`
+
 ## 大模型：添加与验证（文档导航）
 
 以下流程的**命令清单**与 **小米 MiMo、MiniMax（中国区 API Key）** 等说明集中在附录中 **`openclaw models` 命令说明之后**的 **「大模型：新增凭证、切换默认模型与验证（含小米 MiMo、MiniMax）」** 一节（全文搜索该标题即可跳转）。部署与排错经验见同目录 **`user_readme.md`** §1.4。
@@ -186,6 +197,13 @@ Options:
   --remote-url <url>      远程网关 WebSocket URL
   --remote-token <token>  远程网关令牌 (可选)
   -h, --help              显示命令帮助
+
+Windows / 源码运行补充：
+- 成功执行后通常会看到 `Config OK` / `Workspace OK` / `Sessions OK`
+- 若报 `Missing workspace template: IDENTITY.md` 或 `USER.md`，检查仓库内是否存在：
+  - `docs/reference/templates/IDENTITY.md`
+  - `docs/reference/templates/USER.md`
+- `setup` 会写入 `~/.openclaw/openclaw.json`，并初始化默认工作区 `~/.openclaw/workspace`
 
 
 ========================================================================
@@ -2770,6 +2788,17 @@ Commands:
 
 Docs: https://docs.openclaw.ai/cli/gateway
 
+Windows / 源码运行补充：
+- `restart/start/stop/install/uninstall` 面向 **launchd/systemd/schtasks** 形式的服务管理
+- 若执行 `openclaw gateway restart` 时看到 `Gateway service missing`，表示当前没有安装为系统服务，不是 Gateway 命令本身损坏
+- 想直接从源码跑起来，更适合使用：
+  - `pnpm.cmd openclaw gateway --port 18789 --dev --allow-unconfigured --verbose`
+- 若启用了 token 认证，别忘了设置 `OPENCLAW_GATEWAY_TOKEN`
+- 验证运行状态时，建议显式指定地址：
+  - `pnpm.cmd openclaw gateway health --url ws://127.0.0.1:18789 --token <token> --json`
+- 若首页 `http://127.0.0.1:18789/` 返回 `503`，先执行：
+  - `pnpm.cmd ui:build`
+
 Invalid config at C:\Users\18332\.openclaw\openclaw.json:\n- plugins.enabled: Invalid input: expected boolean, received array
 
 ========================================================================
@@ -2971,6 +3000,12 @@ openclaw gateway restart
 cd G:\WS\ai-tools\opensource\openclaw   # 按你的仓库路径修改
 node .\openclaw.mjs gateway restart
 ```
+
+补充：
+
+- 上面这组命令适用于 **Gateway 已安装成服务** 的场景
+- 若你是在 Windows 上直接从源码前台运行 Gateway，而不是安装为服务，`restart` 可能返回 `Gateway service missing`
+- 此时应改为重新执行前台启动命令，而不是继续重试 `restart`
 
 **9. 端到端发一条消息（验证默认模型能否完成一轮推理）**
 

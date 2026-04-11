@@ -5,6 +5,8 @@ import type {
   CronJobPatch,
   CronPayload,
   CronPayloadPatch,
+  CronSchedule,
+  CronScheduleInput,
 } from "../types.js";
 import type { CronServiceState } from "./state.js";
 import { computeNextRunAtMs } from "../schedule.js";
@@ -16,6 +18,7 @@ import {
 } from "./normalize.js";
 
 const STUCK_RUN_MS = 2 * 60 * 60 * 1000;
+const STALE_AT_SCHEDULE_GRACE_MS = 60_000;
 
 export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "payload">) {
   if (job.sessionTarget === "main" && job.payload.kind !== "systemEvent") {
@@ -98,7 +101,7 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
     deleteAfterRun: input.deleteAfterRun,
     createdAtMs: now,
     updatedAtMs: now,
-    schedule: input.schedule,
+    schedule: resolveScheduleInput(input.schedule, now),
     sessionTarget: input.sessionTarget,
     wakeMode: input.wakeMode,
     payload: input.payload,
@@ -112,7 +115,7 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
   return job;
 }
 
-export function applyJobPatch(job: CronJob, patch: CronJobPatch) {
+export function applyJobPatch(job: CronJob, patch: CronJobPatch, nowMs: number) {
   if ("name" in patch) {
     job.name = normalizeRequiredName(patch.name);
   }
@@ -126,7 +129,7 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch) {
     job.deleteAfterRun = patch.deleteAfterRun;
   }
   if (patch.schedule) {
-    job.schedule = patch.schedule;
+    job.schedule = resolveScheduleInput(patch.schedule, nowMs);
   }
   if (patch.sessionTarget) {
     job.sessionTarget = patch.sessionTarget;
@@ -147,6 +150,23 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch) {
     job.agentId = normalizeOptionalAgentId((patch as { agentId?: unknown }).agentId);
   }
   assertSupportedJobSpec(job);
+}
+
+function resolveScheduleInput(schedule: CronScheduleInput, nowMs: number): CronSchedule {
+  if (schedule.kind === "after") {
+    return {
+      kind: "at",
+      atMs: nowMs + Math.max(1, Math.floor(schedule.afterMs)),
+    };
+  }
+
+  if (schedule.kind === "at" && schedule.atMs < nowMs - STALE_AT_SCHEDULE_GRACE_MS) {
+    throw new Error(
+      'cron absolute atMs is too far in the past; use schedule.kind="after" for countdowns',
+    );
+  }
+
+  return schedule;
 }
 
 function mergeCronPayload(existing: CronPayload, patch: CronPayloadPatch): CronPayload {

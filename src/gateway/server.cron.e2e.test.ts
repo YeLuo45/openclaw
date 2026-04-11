@@ -120,6 +120,32 @@ describe("gateway server cron", () => {
       expect(wrappedPayload?.wakeMode).toBe("next-heartbeat");
       expect((wrappedPayload?.schedule as { kind?: unknown } | undefined)?.kind).toBe("at");
 
+      const relativeRes = await rpcReq(ws, "cron.add", {
+        name: "relative countdown",
+        enabled: true,
+        schedule: { kind: "after", afterMs: 5_000 },
+        sessionTarget: "main",
+        wakeMode: "now",
+        payload: { kind: "systemEvent", text: "relative hello" },
+      });
+      expect(relativeRes.ok).toBe(true);
+      const relativePayload = relativeRes.payload as
+        | { schedule?: { kind?: unknown; atMs?: unknown }; wakeMode?: unknown }
+        | undefined;
+      expect(relativePayload?.schedule?.kind).toBe("at");
+      expect(typeof relativePayload?.schedule?.atMs).toBe("number");
+      expect(relativePayload?.wakeMode).toBe("now");
+
+      const staleRes = await rpcReq(ws, "cron.add", {
+        name: "stale absolute",
+        enabled: true,
+        schedule: { kind: "at", atMs: Date.now() - 120_000 },
+        sessionTarget: "main",
+        wakeMode: "now",
+        payload: { kind: "systemEvent", text: "stale" },
+      });
+      expect(staleRes.ok).toBe(false);
+
       const patchRes = await rpcReq(ws, "cron.add", {
         name: "patch test",
         enabled: true,

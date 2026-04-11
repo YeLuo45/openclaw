@@ -181,6 +181,8 @@ JOB SCHEMA (for add action):
 SCHEDULE TYPES (schedule.kind):
 - "at": One-shot at absolute time
   { "kind": "at", "atMs": <unix-ms-timestamp> }
+- "after": One-shot relative countdown resolved by the server
+  { "kind": "after", "afterMs": <delay-ms> }
 - "every": Recurring interval
   { "kind": "every", "everyMs": <interval-ms>, "anchorMs": <optional-start-ms> }
 - "cron": Cron expression
@@ -195,6 +197,8 @@ PAYLOAD TYPES (payload.kind):
 CRITICAL CONSTRAINTS:
 - sessionTarget="main" REQUIRES payload.kind="systemEvent"
 - sessionTarget="isolated" REQUIRES payload.kind="agentTurn"
+- For countdowns/reminders, prefer schedule.kind="after" instead of hand-calculating atMs
+- For timeout actions that should wake main promptly, prefer wakeMode="now"
 
 WAKE MODES (for wake action):
 - "next-heartbeat" (default): Wake on next heartbeat

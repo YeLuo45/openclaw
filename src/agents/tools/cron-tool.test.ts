@@ -89,6 +89,34 @@ describe("cron tool", () => {
     });
   });
 
+  it("passes relative after schedules through cron.add", async () => {
+    const tool = createCronTool();
+    await tool.execute("call-after", {
+      action: "add",
+      job: {
+        name: "countdown",
+        schedule: { kind: "after", afterMs: 300_000 },
+        wakeMode: "now",
+        sessionTarget: "main",
+        payload: { kind: "systemEvent", text: "timeout reached" },
+      },
+    });
+
+    expect(callGatewayMock).toHaveBeenCalledTimes(1);
+    const call = callGatewayMock.mock.calls[0]?.[0] as {
+      method?: string;
+      params?: unknown;
+    };
+    expect(call.method).toBe("cron.add");
+    expect(call.params).toEqual({
+      name: "countdown",
+      schedule: { kind: "after", afterMs: 300_000 },
+      wakeMode: "now",
+      sessionTarget: "main",
+      payload: { kind: "systemEvent", text: "timeout reached" },
+    });
+  });
+
   it("does not default agentId when job.agentId is null", async () => {
     const tool = createCronTool({ agentSessionKey: "main" });
     await tool.execute("call-null", {

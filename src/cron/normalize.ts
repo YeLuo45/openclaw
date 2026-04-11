@@ -36,6 +36,8 @@ function coerceSchedule(schedule: UnknownRecord) {
       typeof schedule.atMs === "string"
     ) {
       next.kind = "at";
+    } else if (typeof schedule.afterMs === "number") {
+      next.kind = "after";
     } else if (typeof schedule.everyMs === "number") {
       next.kind = "every";
     } else if (typeof schedule.expr === "string") {

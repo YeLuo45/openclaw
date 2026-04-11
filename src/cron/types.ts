@@ -5,6 +5,8 @@ export type CronSchedule =
   | { kind: "every"; everyMs: number; anchorMs?: number }
   | { kind: "cron"; expr: string; tz?: string };
 
+export type CronScheduleInput = CronSchedule | { kind: "after"; afterMs: number };
+
 export type CronSessionTarget = "main" | "isolated";
 export type CronWakeMode = "next-heartbeat" | "now";
 
@@ -84,11 +86,13 @@ export type CronStoreFile = {
   jobs: CronJob[];
 };
 
-export type CronJobCreate = Omit<CronJob, "id" | "createdAtMs" | "updatedAtMs" | "state"> & {
+export type CronJobCreate = Omit<CronJob, "id" | "createdAtMs" | "updatedAtMs" | "state" | "schedule"> & {
+  schedule: CronScheduleInput;
   state?: Partial<CronJobState>;
 };
 
-export type CronJobPatch = Partial<Omit<CronJob, "id" | "createdAtMs" | "state" | "payload">> & {
+export type CronJobPatch = Partial<Omit<CronJob, "id" | "createdAtMs" | "state" | "payload" | "schedule">> & {
+  schedule?: CronScheduleInput;
   payload?: CronPayloadPatch;
   state?: Partial<CronJobState>;
 };

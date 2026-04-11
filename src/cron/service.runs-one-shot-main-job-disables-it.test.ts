@@ -79,6 +79,74 @@ describe("CronService", () => {
     await store.cleanup();
   });
 
+  it("resolves relative after schedules to absolute one-shot jobs", async () => {
+    const store = await makeStorePath();
+    const enqueueSystemEvent = vi.fn();
+    const requestHeartbeatNow = vi.fn();
+
+    const cron = new CronService({
+      storePath: store.storePath,
+      cronEnabled: true,
+      log: noopLogger,
+      enqueueSystemEvent,
+      requestHeartbeatNow,
+      runIsolatedAgentJob: vi.fn(async () => ({ status: "ok" })),
+    });
+
+    await cron.start();
+    const now = Date.parse("2025-12-13T00:00:00.000Z");
+    const job = await cron.add({
+      name: "relative one-shot hello",
+      enabled: true,
+      schedule: { kind: "after", afterMs: 2_000 },
+      sessionTarget: "main",
+      wakeMode: "now",
+      payload: { kind: "systemEvent", text: "hello after" },
+    });
+
+    expect(job.schedule.kind).toBe("at");
+    expect(job.state.nextRunAtMs).toBe(now + 2_000);
+
+    vi.setSystemTime(new Date("2025-12-13T00:00:02.000Z"));
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(enqueueSystemEvent).toHaveBeenCalledWith("hello after", {
+      agentId: undefined,
+    });
+
+    cron.stop();
+    await store.cleanup();
+  });
+
+  it("rejects stale absolute at schedules that are too far in the past", async () => {
+    const store = await makeStorePath();
+
+    const cron = new CronService({
+      storePath: store.storePath,
+      cronEnabled: true,
+      log: noopLogger,
+      enqueueSystemEvent: vi.fn(),
+      requestHeartbeatNow: vi.fn(),
+      runIsolatedAgentJob: vi.fn(async () => ({ status: "ok" })),
+    });
+
+    await cron.start();
+
+    await expect(
+      cron.add({
+        name: "stale one-shot",
+        enabled: true,
+        schedule: { kind: "at", atMs: Date.parse("2025-12-12T23:57:00.000Z") },
+        sessionTarget: "main",
+        wakeMode: "now",
+        payload: { kind: "systemEvent", text: "too old" },
+      }),
+    ).rejects.toThrow(/past/i);
+
+    cron.stop();
+    await store.cleanup();
+  });
+
   it("runs a one-shot job and deletes it after success when requested", async () => {
     const store = await makeStorePath();
     const enqueueSystemEvent = vi.fn();
